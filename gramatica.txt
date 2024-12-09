@@ -1,0 +1,22 @@
+<document> ::= <element> | <element> <document>
+
+<element> ::= <header> 
+            | <list>
+            | <bold>
+            | <italic>
+            | <text>
+
+<header> ::= "#" <text> "\n"
+           | "##" <text> "\n"
+           | "###" <text> "\n"
+
+<list> ::= "-" <text> "\n" <list>
+         | "-" <text> "\n"
+
+<bold> ::= "**" <text> "**"
+
+<italic> ::= "_" <text> "_"
+
+<text> ::= <char> | <char> <text>
+
+<char> ::= qualquer símbolo que não seja especial (como `#`, `*`, ou `_`).
