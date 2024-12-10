@@ -6,114 +6,92 @@ class Lexer:
     def __init__(self, source_code):
         self.code = source_code
         self.current = None
-        self.indice, self.coluna, self.linha = -1, -1, 0
+        self.indice = -1
         self.__advance()
 
     def __advance(self):
-        self.__advanceCalc(self.current)
+        """Avança para o próximo caractere na entrada."""
+        self.indice += 1
         self.current = self.code[self.indice] if self.indice < len(self.code) else None
 
-    def __advanceCalc(self, _char=None):
-        self.indice += 1
-        self.coluna += 1
-        if _char == '\n':
-                self.linha += 1
-                self.coluna = 0
-        return self
+    def __peek(self):
+        """Olha o próximo caractere sem avançar."""
+        return self.code[self.indice + 1] if self.indice + 1 < len(self.code) else None
 
     def makeTokens(self):
+        """Gera uma lista de tokens a partir do código-fonte."""
         tokens = []
-        while self.current != None:
-            if self.current in ' \t':
+        while self.current is not None:
+            if self.current in ' \t\n':
                 self.__advance()
-            elif self.current == '*' and self.__peek() == '*':  # Detectando negrito
+            elif self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'):
+                tokens.append(self.__makeHeader())
+            elif self.current == '*' and self.__peek() == '*':
                 tokens.append(self.__makeBold())
-            elif self.current in Consts.DIGITOS:
-                tokens.append(self.__makeNumber())
-            elif self.current == '"':
-                tokens.append(self.__MakeString())
-            elif self.current == Consts.PLUS:
-                tokens.append(Token(Consts.PLUS))
-                self.__advance()
-            elif self.current == Consts.MINUS:
-                tokens.append(Token(Consts.MINUS))
-                self.__advance()
-            elif self.current == Consts.MUL:
-                tokens.append(Token(Consts.MUL))
-                self.__advance()
-            elif self.current == Consts.DIV:
-                tokens.append(Token(Consts.DIV))
-                self.__advance()
-            elif self.current == Consts.POW:
-                tokens.append(Token(Consts.POW))
-                self.__advance()
-            elif self.current == Consts.LPAR:
-                tokens.append(Token(Consts.LPAR))
-                self.__advance()
-            elif self.current == Consts.RPAR:
-                tokens.append(Token(Consts.RPAR))
-                self.__advance()
+            elif self.current == '-':
+                tokens.append(self.__makeList())
             else:
-                self.__advance()
-                return [], Error(f"{Error.lexerError}: lex-symbol '{self.current}' fail!")
-
+                tokens.append(self.__makeString())
         tokens.append(Token(Consts.EOF))
         return tokens, None
 
-    def __peek(self):
-        """
-        Retorna o próximo caractere sem avançar o índice.
-        """
-        return self.code[self.indice + 1] if self.indice + 1 < len(self.code) else None
+    def __makeHeader(self):
+        """Reconhece cabeçalhos (ex: # Título, mas não #titulo)."""
+        level = 0
+        while self.current == '#':
+            level += 1
+            self.__advance()
+        
+        # Verifica se há um espaço após os #
+        if self.current == ' ':
+            self.__advance()  # Consome o espaço
+            content = self.__consumeUntilNewline()
+            return Token(Consts.HEADER, f"H{level}: {content}")
+        else:
+            # Se não houver espaço, trata como uma STRING
+            return self.__makeString()
 
     def __makeBold(self):
-        """
-        Processa texto em negrito delimitado por **.
-        """
-        self.__advance()  # Avança para consumir o primeiro '*'
-        self.__advance()  # Avança para consumir o segundo '*'
-        bold_text = ""
-        while self.current != None and (self.current != '*' or self.__peek() != '*'):
-            bold_text += self.current
-            self.__advance()
-        self.__advance()  # Consumir o primeiro '*' de fechamento
-        self.__advance()  # Consumir o segundo '*' de fechamento
+        """Reconhece texto em negrito (delimitado por **)."""
+        self.__advance()  # Consome o primeiro '*'
+        self.__advance()  # Consome o segundo '*'
+        bold_text = self.__consumeUntil("**")
         return Token(Consts.BOLD, bold_text)
 
-    def __makeNumber(self):
-        strNumber = ''
-        dotCount = 0
-        while self.current != None and self.current in Consts.DIGITOS + '.':
-            if self.current == '.':
-                if dotCount == 1: break
-                dotCount += 1
-                strNumber += '.'
-            else:
-                strNumber += self.current
+    def __makeList(self):
+        """Reconhece listas (ex: - Item)."""
+        self.__advance()  # Consome o '-'
+        if self.current == ' ':
             self.__advance()
+        content = self.__consumeUntilNewline()
+        return Token(Consts.LIST, content)
 
-        if dotCount == 0:
-            return Token(Consts.INT, int(strNumber))
-        else:
-            return Token(Consts.FLOAT, float(strNumber))
-    
-    def __MakeString(self):
-        stri = ""
-        bypass = False
-        self.__advance()
-        specialChars = {'n':'\n', 't': '\t'}
-        while (self.current != None and (self.current != '"' or bypass)):
-            if (bypass):
-                c = specialChars.get(self.current, self.current)
-                stri += c
-                bypass = False
-            else:
-                if (self.current == '\\'):
-                    bypass = True
-                else:
-                    stri += self.current
+    def __makeString(self):
+        """Reconhece qualquer outro texto como STRING."""
+        string_text = ""
+        while self.current is not None and self.current not in ' \t\n':
+            string_text += self.current
             self.__advance()
+        return Token(Consts.STRING, string_text)
 
-        self.__advance()
-        return Token(Consts.STRING, stri)
+    def __consumeUntil(self, delimiter, stop_on_special=False):
+        """Consome caracteres até encontrar o delimitador."""
+        result = ""
+        while self.current is not None and not self.code[self.indice:].startswith(delimiter):
+            if stop_on_special and self.current in ('#', '-', '*'):
+                break
+            result += self.current
+            self.__advance()
+        if self.current is not None:
+            for _ in delimiter:  # Consome o delimitador
+                self.__advance()
+        return result
+
+    def __consumeUntilNewline(self):
+        """Consome caracteres até encontrar uma nova linha."""
+        result = ""
+        while self.current is not None and self.current != '\n':
+            result += self.current
+            self.__advance()
+        return result
 
