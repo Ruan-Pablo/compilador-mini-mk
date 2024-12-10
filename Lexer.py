@@ -145,12 +145,3 @@ class Lexer:
             self.__advance()
         return Token(Consts.STRING, string_text)
 
-
-    def __consumeUntilNewline(self):
-        """Consome caracteres até encontrar uma nova linha."""
-        result = ""
-        while self.current is not None and self.current != '\n':
-            result += self.current
-            self.__advance()
-        return result
-
