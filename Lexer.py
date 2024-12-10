@@ -39,35 +39,65 @@ class Lexer:
             else:
                 tokens.append(self.__makeString())
         tokens.append(Token(Consts.EOF))
-        return tokens, None 
+        return tokens, None
+
 
     def __makeHeader(self):
-        """Reconhece cabeçalhos (ex: # Título, mas não #titulo)."""
+        """Reconhece cabeçalhos e processa conteúdo interno para negrito e itálico."""
         level = 0
         while self.current == '#':
             level += 1
             self.__advance()
         
-        # Verifica se há um espaço após os #
+        # Verifica e consome o espaço após os #
         if self.current == ' ':
-            self.__advance()  # Consome o espaço
-            content = self.__consumeUntilNewline()
-            return Token(Consts.HEADER, f"H{level}: {content}")
+            self.__advance()  # Avança para o conteúdo do título
+            tokens = []
+            while self.current is not None and self.current != '\n':
+                if self.current == '*' and self.__peek() == '*':
+                    tokens.append(self.__makeBold())
+                elif self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'}):
+                    tokens.append(self.__makeUnder())
+                elif self.current not in '\t\n ':
+                    tokens.append(self.__makeString())
+                else:
+                    self.__advance()
+            # Retorna o título como um conjunto de tokens
+            return Token(Consts.HEADER, {"level": level, "content": tokens})
         else:
             # Se não houver espaço, trata como uma STRING
             return self.__makeString()
 
     def __makeBold(self):
-        """Reconhece texto em negrito delimitado por **, mesmo sem espaços."""
+        """Reconhece texto em negrito delimitado por ** no início e ** no final."""
         self.__advance()  # Consome o primeiro '*'
         self.__advance()  # Consome o segundo '*'
+
         bold_text = ""
-        while self.current is not None and not (self.current == '*' and self.__peek() == '*'):
-            bold_text += self.current
-            self.__advance()
-        self.__advance()  # Consome o primeiro '*' de fechamento
-        self.__advance()  # Consome o segundo '*' de fechamento
-        return Token(Consts.BOLD, bold_text)
+        while self.current is not None:
+            # Verifica se encontrou exatamente dois asteriscos no fechamento
+            if self.current == '*' and self.__peek() == '*':
+                # Verifica se após os dois asteriscos não há outro '*'
+                self.__advance()  # Consome o primeiro '*' do fechamento
+
+                if self.__peek() == '*':  # verifica se o proximo eh * para checar a sequencia de 
+                    bold_text += "*"  # Caso seja parte do texto
+                    
+                else:
+                    self.__advance()
+                    return Token(Consts.BOLD, bold_text)
+
+                    # bold_text += "**"  # Caso seja parte do texto
+            else:
+                # Adiciona caracteres ao texto
+                bold_text += self.current
+                self.__advance()
+
+        # Se não encontrar delimitador de fechamento, trata como STRING
+        return Token(Consts.STRING, "**" + bold_text)
+
+
+
     
     def __makeUnder(self):
         """Reconhece texto em itálico delimitado por _, mesmo no início da entrada."""
@@ -104,18 +134,6 @@ class Lexer:
             self.__advance()
         return Token(Consts.STRING, string_text)
 
-    def __consumeUntil(self, delimiter, stop_on_special=False):
-        """Consome caracteres até encontrar o delimitador."""
-        result = ""
-        while self.current is not None and not self.code[self.indice:].startswith(delimiter):
-            if stop_on_special and self.current in ('#', '-', '*'):
-                break
-            result += self.current
-            self.__advance()
-        if self.current is not None:
-            for _ in delimiter:  # Consome o delimitador
-                self.__advance()
-        return result
 
     def __consumeUntilNewline(self):
         """Consome caracteres até encontrar uma nova linha."""
