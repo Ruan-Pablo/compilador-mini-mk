@@ -22,20 +22,24 @@ class Lexer:
         """Gera uma lista de tokens a partir do código-fonte."""
         tokens = []
         while self.current is not None:
-            if self.current in ' \t\n':
-                self.__advance()
+            if self.current in '\t\n ':
+                self.__advance()  # Ignora espaços, tabulações e quebras de linha
             elif self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'):
                 tokens.append(self.__makeHeader())
             elif self.current == '*' and self.__peek() == '*':
                 tokens.append(self.__makeBold())
             elif self.current == '_':
-                tokens.append(self.__makeUnder())
+                # Verifica se está no início ou se o caractere anterior é um espaço ou quebra de linha
+                if self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'}:
+                    tokens.append(self.__makeUnder())
+                else:
+                    tokens.append(self.__makeString())
             elif self.current == '-':
                 tokens.append(self.__makeList())
             else:
                 tokens.append(self.__makeString())
         tokens.append(Token(Consts.EOF))
-        return tokens, None
+        return tokens, None 
 
     def __makeHeader(self):
         """Reconhece cabeçalhos (ex: # Título, mas não #titulo)."""
@@ -66,15 +70,18 @@ class Lexer:
         return Token(Consts.BOLD, bold_text)
     
     def __makeUnder(self):
-        """Reconhece texto em italioc delimitado por **, mesmo sem espaços."""
-        self.__advance()  # Consome o ''
+        """Reconhece texto em itálico delimitado por _, mesmo no início da entrada."""
+        self.__advance()  # Consome o '_'
         italic_text = ""
-        while self.current is not None and not self.current == '_':
+        while self.current is not None and self.current != '_':
             italic_text += self.current
             self.__advance()
-        self.__advance()  # Consome o '_' de fechamento
-        return Token(Consts.ITALIC, italic_text)
-
+        if self.current == '_':  # Confirma o fechamento
+            self.__advance()
+            return Token(Consts.ITALIC, italic_text)
+        # Se não encontrar fechamento, retorna como STRING
+        return Token(Consts.STRING, "_" + italic_text)
+    
     def __makeList(self):
         """Reconhece listas (ex: - Item)."""
         self.__advance()  # Consome o '-'
@@ -84,10 +91,14 @@ class Lexer:
         return Token(Consts.LIST, content)
 
     def __makeString(self):
-        """Reconhece qualquer outro texto como STRING."""
+        """Reconhece qualquer sequência de caracteres não separados por espaço, tabulação ou nova linha como STRING."""
         string_text = ""
-        while self.current is not None and self.current not in ' \t\n':
-            if (self.current == '*' and self.__peek() == '*') or self.current == '_':
+        while self.current is not None:
+            # Interrompe ao encontrar delimitadores ou espaços
+            if self.current in ' \t\n' or \
+            (self.current == '*' and self.__peek() == '*') or \
+            (self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'})) or \
+            self.current == '-':
                 break
             string_text += self.current
             self.__advance()

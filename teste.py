@@ -1,3 +1,1 @@
-import string
-
-print(string.ascii_letters)
+str **nego** _italico_ not_italic_
