@@ -6,6 +6,12 @@ from Error import Error
  K -> +iK
  K -> 
 """
+
+''' BoLD
+S -> *K
+K -> *T
+T ->
+'''
 class RecDescendente:
     def __init__(self, toks):
         self.tokens = toks

@@ -26,9 +26,11 @@ class Lexer:
         while self.current != None:
             if self.current in ' \t':
                 self.__advance()
+            elif self.current == '*' and self.__peek() == '*':  # Detectando negrito
+                tokens.append(self.__makeBold())
             elif self.current in Consts.DIGITOS:
                 tokens.append(self.__makeNumber())
-            elif(self.current == '"'):
+            elif self.current == '"':
                 tokens.append(self.__MakeString())
             elif self.current == Consts.PLUS:
                 tokens.append(Token(Consts.PLUS))
@@ -57,6 +59,26 @@ class Lexer:
 
         tokens.append(Token(Consts.EOF))
         return tokens, None
+
+    def __peek(self):
+        """
+        Retorna o próximo caractere sem avançar o índice.
+        """
+        return self.code[self.indice + 1] if self.indice + 1 < len(self.code) else None
+
+    def __makeBold(self):
+        """
+        Processa texto em negrito delimitado por **.
+        """
+        self.__advance()  # Avança para consumir o primeiro '*'
+        self.__advance()  # Avança para consumir o segundo '*'
+        bold_text = ""
+        while self.current != None and (self.current != '*' or self.__peek() != '*'):
+            bold_text += self.current
+            self.__advance()
+        self.__advance()  # Consumir o primeiro '*' de fechamento
+        self.__advance()  # Consumir o segundo '*' de fechamento
+        return Token(Consts.BOLD, bold_text)
 
     def __makeNumber(self):
         strNumber = ''
@@ -94,5 +116,4 @@ class Lexer:
 
         self.__advance()
         return Token(Consts.STRING, stri)
-
 

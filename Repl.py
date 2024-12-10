@@ -45,9 +45,9 @@ class Repl(Cmd):
         #if error or not isinstance(semanticNode, Visitor): 
         #    return None, error
         #print(f'Parser: {semanticNode}')
-        parser = RecDescendente(tokens)
-        valido, error = parser.start()
-        return valido, error
+        # parser = RecDescendente(tokens)
+        # valido, error = parser.start()
+        return tokens, error
     
     def analisador(self, linha):
         resultado, error = self.run(linha)
