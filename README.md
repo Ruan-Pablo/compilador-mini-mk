@@ -4,7 +4,7 @@ Estudo em compiladores com python e contrução de um analisador Lexico. Apesar 
 
 # test**de**md  ****_it_**** asdf
 *BOLD*****
-
+ asd
 a _i_
 a*jk*a
 _i_a

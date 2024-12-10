@@ -27,6 +27,8 @@ class Lexer:
             elif self.indice == 0 or self.code[self.indice - 1] in {'\n'} and \
                 self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'): # verifica se é inicio de linha
                 tokens.append(self.__makeHeader())
+            elif self.current == '-'  and self.indice == 0 or self.code[self.indice - 1] in {'\n'}:
+                tokens.append(self.__makeList())
             elif self.current == '*' and self.__peek() == '*':
                 tokens.append(self.__makeBold())
             elif self.current == '_':
@@ -35,8 +37,6 @@ class Lexer:
                     tokens.append(self.__makeUnder())
                 else:
                     tokens.append(self.__makeString())
-            elif self.current == '-'  and self.indice == 0 or self.code[self.indice - 1] in {'\n'}:
-                tokens.append(self.__makeList())
             else:
                 tokens.append(self.__makeString())
         tokens.append(Token(Consts.EOF))
