@@ -5,7 +5,7 @@ from recursivo_desc import RecDescendente
 class Repl(Cmd):
     prompt = 'UFC> '
     intro = "Bem vindo!\nDigite\n :h para ajuda\n :q para sair e imprimir o assembly\n :s para um exemplo!"
-
+    lexer = None
     def do_exit(self, inp):
         return True
     def help_exit(self):
@@ -29,6 +29,12 @@ class Repl(Cmd):
     do_EOF = do_exit
     help_EOF = help_exit
 
+    def imprimir(self,classe, tokens):
+        print(f"{type(classe).__name__}:")
+        for i in tokens:
+            print(i)
+
+
     def run(self, linha):
         # Gerar tokens
         lexer = Lexer(linha)
@@ -36,7 +42,8 @@ class Repl(Cmd):
         if error: 
             print(error)
             return None, error
-        print(f'Lexer: {tokens}')
+        
+        self.imprimir(lexer, tokens)
 
         # Gerar AST
         #astInfo = Parser.instance().Parsing(tokens)
@@ -53,4 +60,4 @@ class Repl(Cmd):
         resultado, error = self.run(linha)
         if error: 
             print(f'Log de Erro: {error}')
-        else: print(f'{resultado}')
+        # else: print(f'{resultado}')
