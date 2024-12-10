@@ -80,7 +80,7 @@ class Lexer:
                 # Verifica se após os dois asteriscos não há outro '*'
                 self.__advance()  # Consome o primeiro '*' do fechamento
 
-                if self.__peek() == '*':  # verifica se o proximo eh * para checar a sequencia de 
+                if self.__peek() == '*':  # verifica se o proximo eh * para checar a sequencia de *'s
                     bold_text += "*"  # Caso seja parte do texto
                     
                 else:
@@ -95,9 +95,6 @@ class Lexer:
 
         # Se não encontrar delimitador de fechamento, trata como STRING
         return Token(Consts.STRING, "**" + bold_text)
-
-
-
     
     def __makeUnder(self):
         """Reconhece texto em itálico delimitado por _, mesmo no início da entrada."""
@@ -116,9 +113,23 @@ class Lexer:
         """Reconhece listas (ex: - Item)."""
         self.__advance()  # Consome o '-'
         if self.current == ' ':
-            self.__advance()
-        content = self.__consumeUntilNewline()
-        return Token(Consts.LIST, content)
+            self.__advance()  # Avança para o conteúdo do título
+            tokens = []
+            while self.current is not None and self.current != '\n':
+                if self.current == '*' and self.__peek() == '*':
+                    tokens.append(self.__makeBold())
+                elif self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'}):
+                    tokens.append(self.__makeUnder())
+                elif self.current not in '\t\n ':
+                    tokens.append(self.__makeString())
+                else:
+                    self.__advance()
+            # Retorna o título como um conjunto de tokens
+            return Token(Consts.LIST, {"content": tokens})
+            # return Token(Consts.HEADER, {"level": level, "content": tokens})
+        else:
+            # Se não houver espaço, trata como uma STRING
+            return self.__makeString()
 
     def __makeString(self):
         """Reconhece qualquer sequência de caracteres não separados por espaço, tabulação ou nova linha como STRING."""
