@@ -22,9 +22,10 @@ class Lexer:
         """Gera uma lista de tokens a partir do código-fonte."""
         tokens = []
         while self.current is not None:
-            if self.current in '\t\n ':
-                self.__advance()  # Ignora espaços, tabulações e quebras de linha
-            elif self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'):
+            if self.current in '\t\n ': # Ignora espaços, tabulações e quebras de linha
+                self.__advance()  
+            elif self.indice == 0 or self.code[self.indice - 1] in {'\n'} and \
+                self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'): # verifica se é inicio de linha
                 tokens.append(self.__makeHeader())
             elif self.current == '*' and self.__peek() == '*':
                 tokens.append(self.__makeBold())
@@ -34,7 +35,7 @@ class Lexer:
                     tokens.append(self.__makeUnder())
                 else:
                     tokens.append(self.__makeString())
-            elif self.current == '-':
+            elif self.current == '-'  and self.indice == 0 or self.code[self.indice - 1] in {'\n'}:
                 tokens.append(self.__makeList())
             else:
                 tokens.append(self.__makeString())
@@ -138,8 +139,7 @@ class Lexer:
             # Interrompe ao encontrar delimitadores ou espaços
             if self.current in ' \t\n' or \
             (self.current == '*' and self.__peek() == '*') or \
-            (self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'})) or \
-            self.current == '-':
+            (self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'})):
                 break
             string_text += self.current
             self.__advance()
