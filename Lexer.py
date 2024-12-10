@@ -28,6 +28,8 @@ class Lexer:
                 tokens.append(self.__makeHeader())
             elif self.current == '*' and self.__peek() == '*':
                 tokens.append(self.__makeBold())
+            elif self.current == '_':
+                tokens.append(self.__makeUnder())
             elif self.current == '-':
                 tokens.append(self.__makeList())
             else:
@@ -52,11 +54,26 @@ class Lexer:
             return self.__makeString()
 
     def __makeBold(self):
-        """Reconhece texto em negrito (delimitado por **)."""
+        """Reconhece texto em negrito delimitado por **, mesmo sem espaços."""
         self.__advance()  # Consome o primeiro '*'
         self.__advance()  # Consome o segundo '*'
-        bold_text = self.__consumeUntil("**")
+        bold_text = ""
+        while self.current is not None and not (self.current == '*' and self.__peek() == '*'):
+            bold_text += self.current
+            self.__advance()
+        self.__advance()  # Consome o primeiro '*' de fechamento
+        self.__advance()  # Consome o segundo '*' de fechamento
         return Token(Consts.BOLD, bold_text)
+    
+    def __makeUnder(self):
+        """Reconhece texto em italioc delimitado por **, mesmo sem espaços."""
+        self.__advance()  # Consome o ''
+        italic_text = ""
+        while self.current is not None and not self.current == '_':
+            italic_text += self.current
+            self.__advance()
+        self.__advance()  # Consome o '_' de fechamento
+        return Token(Consts.ITALIC, italic_text)
 
     def __makeList(self):
         """Reconhece listas (ex: - Item)."""
@@ -70,6 +87,8 @@ class Lexer:
         """Reconhece qualquer outro texto como STRING."""
         string_text = ""
         while self.current is not None and self.current not in ' \t\n':
+            if (self.current == '*' and self.__peek() == '*') or self.current == '_':
+                break
             string_text += self.current
             self.__advance()
         return Token(Consts.STRING, string_text)
