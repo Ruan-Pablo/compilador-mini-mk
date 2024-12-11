@@ -1,17 +1,10 @@
 from Consts import Consts
 from Error import Error
 
-""" i é int
- E-> iK
- K -> +iK
- K -> 
-"""
+"""Regras 
+ELEMENTO -> HEADER | LIST | TEXTO.
 
-''' BoLD
-S -> *K
-K -> *T
-T ->
-'''
+"""
 class RecDescendente:
     def __init__(self, toks):
         self.tokens = toks
@@ -43,7 +36,6 @@ class RecDescendente:
         return None, "Falha E(), precisa iniciar com inteiro"
     
     def K(self):
-
         print(self.currentTok())
         if self.currentTok().type == Consts.PLUS:
             self.nextToken()
