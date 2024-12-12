@@ -21,20 +21,20 @@ class Lexer:
         while self.current is not None:
             if self.current in '\t\n ':
                 self.__advance()  
-            elif self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'):
+            elif self.current == '#' and (self.__peek() == ' ' or self.__peek() == '#'): # HEADER
                 # Verifica se está no início ou se o caractere anterior é um espaço ou quebra de linha
                 if self.indice == 0 or self.code[self.indice - 1] in {'\n'}:
                     tokens.append(self.__makeHeader())
                 else:
                     tokens.append(self.__makeString())
-            elif self.current == '*' and self.__peek() == '*':
+            elif self.current == '*' and self.__peek() == '*': # BOLD
                 tokens.append(self.__makeBold())
-            elif self.current == '_':
+            elif self.current == '_': # ITALIC
                 if self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'}:
                     tokens.append(self.__makeUnder())
                 else:
                     tokens.append(self.__makeString())
-            elif self.current == '-':
+            elif self.current == '-': # LIST
                 if self.indice == 0 or self.code[self.indice - 1] in {'\n'}:
                     tokens.append(self.__makeList())
                 else:
@@ -65,6 +65,27 @@ class Lexer:
                 else:
                     self.__advance()
             return Token(Consts.HEADER, {"level": level, "content": tokens})
+        else:
+            # Se não houver espaço, trata como uma STRING
+            return self.__makeString()
+
+
+    
+    def __makeList(self):
+        self.__advance()  # Consome o '-'
+        if self.current == ' ':
+            self.__advance() 
+            tokens = []
+            while self.current is not None and self.current != '\n':
+                if self.current == '*' and self.__peek() == '*':
+                    tokens.append(self.__makeBold())
+                elif self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'}):
+                    tokens.append(self.__makeUnder())
+                elif self.current not in '\t\n ':
+                    tokens.append(self.__makeString())
+                else:
+                    self.__advance()
+            return Token(Consts.LIST, {"content": tokens})
         else:
             # Se não houver espaço, trata como uma STRING
             return self.__makeString()
@@ -101,25 +122,6 @@ class Lexer:
             return Token(Consts.ITALIC, italic_text)
         # Se não encontrar fechamento, retorna como STRING
         return Token(Consts.STRING, "_" + italic_text)
-    
-    def __makeList(self):
-        self.__advance()  # Consome o '-'
-        if self.current == ' ':
-            self.__advance() 
-            tokens = []
-            while self.current is not None and self.current != '\n':
-                if self.current == '*' and self.__peek() == '*':
-                    tokens.append(self.__makeBold())
-                elif self.current == '_' and (self.indice == 0 or self.code[self.indice - 1] in {' ', '\n'}):
-                    tokens.append(self.__makeUnder())
-                elif self.current not in '\t\n ':
-                    tokens.append(self.__makeString())
-                else:
-                    self.__advance()
-            return Token(Consts.LIST, {"content": tokens})
-        else:
-            # Se não houver espaço, trata como uma STRING
-            return self.__makeString()
 
     def __makeString(self):
         string_text = ""

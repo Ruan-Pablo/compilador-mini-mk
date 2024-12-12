@@ -1,7 +1,5 @@
-<document> ::= <element> | <element> <document>
-
 <element> ::= <header> 
-            | <list>
+#
             | <bold>
             | <italic>
             | <text>
